@@ -1,0 +1,5 @@
+FROM mediawiki
+
+COPY mediawiki_data.tar.gz /var/www
+RUN rm -rf /var/www/html
+RUN cd /var/www;tar -xzvf mediawiki_data.tar.gz

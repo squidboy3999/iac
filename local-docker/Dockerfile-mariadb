@@ -1,0 +1,5 @@
+FROM mariadb
+
+COPY mediawiki_mdb_data.tar.gz /var/lib
+RUN rm -rf /var/lib/mysql
+RUN cd /var/lib;tar -xzvf mediawiki_mdb_data.tar.gz
