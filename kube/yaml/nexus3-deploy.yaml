@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    k8s-app: nexus-server
+  name: nexus-server
+  namespace: kube-system
+spec:
+  serviceName: nexus-server
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: nexus-server
+  template:
+    metadata:
+      labels:
+        k8s-app: nexus-server
+    spec:
+      securityContext:
+        fsGroup: 1000 
+      containers:
+        - name: nexus
+          image: sonatype/nexus3:latest
+          resources:
+            limits:
+              memory: "4Gi"
+              cpu: "1000m"
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8081
+          volumeMounts:
+            - name: nexus-data
+              mountPath: /nexus-data 
+  volumeClaimTemplates:
+  - metadata:
+      name: nexus-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: local-storage
+      resources:
+        requests:
+          storage: 20Gi
+
+---
+# ------------------- Nexus Service Account ------------------- #
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-app: nexus-server
+  name: nexus-server
+  namespace: kube-system
+---
+# ------------------- Dashboard Service ------------------- #
+
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: nexus-server
+  name: nexus-server
+  namespace: kube-system
+spec:
+  ports:
+    - port: 80
+      targetPort: 8081
+  selector:
+    k8s-app: nexus-server

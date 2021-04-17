@@ -1,0 +1,73 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wekan-ingress
+  namespace: kube-system
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-redirect-from: ~^http://(.+)$
+    nginx.ingress.kubernetes.io/proxy-redirect-to: http://$1
+    nginx.ingress.kubernetes.io/rewrite-target: /wekan-ingress/
+    #nginx.ingress.kubernetes.io/app-root: /nexus/
+    #kubernetes.io/ingress.class: traefik
+    #traefik.ingress.kubernetes.io/app-root: /nexus-server/
+    #traefik.frontend.rule.type: PathPrefixStrip
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /wekan-ingress/
+        pathType: Prefix
+        backend:
+          service:
+            name: wekan
+            port:
+              number: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wekan
+  namespace: kube-system
+  labels:
+    app: wekan
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8083
+  selector:
+    app: wekan
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wekan
+  namespace: kube-system
+  labels:
+    app: wekan
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: wekan
+  template:
+    metadata:
+      labels:
+        app: wekan
+    spec:
+      containers:
+      - image: quay.io/wekan/wekan:v1.78
+        name: wekan
+        ports:
+        - containerPort: 8083
+          name: wekan
+        env:
+        - name: MONGO_URL
+          value: mongodb://wekan:pass@mongodb:27017/wekan
+        - name: PORT
+          value: "8083"
+        - name: ROOT_URL
+          value: http://127.0.0.1/wekan-ingress/
+
